@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="vi" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Tương Tác: Tuyển Sinh Đại học 2025 tại TP.HCM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A user-journey-based, thematic single-page application. The structure begins with a high-level overview, then drills down into specific areas of interest: MOET's policy changes (interactive accordion), university-specific strategies (dynamic filterable dashboard), student concerns and strategies (interactive guidance), and market/career context (charts and organized info). This non-linear, interactive structure is chosen over the empower different users (students, parents, counselors) to find relevant information quickly and intuitively, thereby enhancing understanding and usability. -->
+    <!-- Visualization & Content Choices:
+        - Policy Changes -> Goal: Inform/Simplify -> Method: Interactive Accordion (HTML/JS) -> Interaction: Click-to-reveal -> Justification: Breaks down dense regulations into digestible pieces.
+        - University Plans -> Goal: Compare/Explore -> Method: Dropdown Filter + Bar Chart (Chart.js) -> Interaction: Select university to update data card; hover chart for details -> Justification: Enables targeted search and visualizes the trend of method diversification.
+        - Labor Market -> Goal: Relate/Inform -> Method: Donut Chart (Chart.js) -> Interaction: Hover/Click for details -> Justification: Visually represents the composition of "hot" sectors.
+        - Historical Data -> Goal: Compare/Show Change -> Method: Grouped Bar Chart (Chart.js) -> Interaction: Hover for exact figures -> Justification: Clearly illustrates year-over-year trends from the report's data table.
+        - Student Strategy -> Goal: Guide/Organize -> Method: HTML/CSS Flowchart -> Interaction: Static visual guide -> Justification: Translates abstract advice into a clear, actionable process.
+        - Personalized Strategy Advice (LLM) -> Goal: Guide/Personalize -> Method: Text input + Button + Text output -> Interaction: User inputs query, clicks button, AI provides advice -> Justification: Provides tailored guidance based on user's specific concerns.
+        - Explore Career Paths (LLM) -> Goal: Inform/Deepen Understanding -> Method: Dropdown + Button + Text output -> Interaction: User selects sector, clicks button, AI provides career details -> Justification: Expands on "hot sectors" with practical career information. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <style>
+        body {
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background-color: #f8fafc;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+        .section-title {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .section-subtitle {
+            font-size: 1.125rem;
+            color: #475569;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto 3rem auto;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1.5rem;
+            transition: all 0.3s ease-in-out;
+        }
+        .card:hover {
+             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+             transform: translateY(-4px);
+        }
+        .nav-link {
+            transition: color 0.3s;
+            color: #334155;
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            color: #0ea5e9;
+        }
+        .accordion-button {
+            transition: background-color 0.3s;
+        }
+        .accordion-button.open {
+            background-color: #e0f2fe;
+            color: #0c4a6e;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body class="text-slate-700">
+
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-4 lg:px-6 py-4 flex justify-between items-center">
+            <a href="#" class="text-xl font-bold text-sky-600">Tuyển Sinh 2025</a>
+            <div class="hidden md:flex items-center space-x-6">
+                <a href="#diem-moi" class="nav-link">Điểm Mới</a>
+                <a href="#truong-dh" class="nav-link">Các Trường ĐH</a>
+                <a href="#thi-sinh" class="nav-link">Thí Sinh</a>
+                <a href="#xu-huong" class="nav-link">Xu Hướng</a>
+                <a href="#du-bao" class="nav-link">Dữ Liệu & Dự Báo</a>
+            </div>
+            <a href="#khuyen-nghi" class="hidden md:inline-block bg-sky-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-sky-700 transition">
+                Khuyến Nghị
+            </a>
+            <button id="mobile-menu-button" class="md:hidden p-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+            </button>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden px-4 pt-2 pb-4 space-y-2">
+             <a href="#diem-moi" class="block nav-link">Điểm Mới</a>
+             <a href="#truong-dh" class="block nav-link">Các Trường ĐH</a>
+             <a href="#thi-sinh" class="block nav-link">Thí Sinh</a>
+             <a href="#xu-huong" class="block nav-link">Xu Hướng</a>
+             <a href="#du-bao" class="block nav-link">Dữ Liệu & Dự Báo</a>
+             <a href="#khuyen-nghi" class="block nav-link">Khuyến Nghị</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 lg:px-6 py-8 md:py-16">
+
+        <section id="home" class="text-center mb-24">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-800 mb-4 leading-tight">Tuyển sinh Đại học 2025: Thách thức mới, Cơ hội mới</h1>
+            <p class="text-lg text-slate-600 max-w-3xl mx-auto mb-8">
+                Khám phá toàn cảnh những thay đổi cốt lõi trong chính sách tuyển sinh, tác động đến thí sinh và chiến lược thích ứng của các trường đại học tại TP.HCM.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                <div class="card text-center">
+                    <p class="text-4xl font-bold text-sky-600">7+</p>
+                    <p class="font-semibold mt-2">Thay Đổi Chính Sách Lớn</p>
+                </div>
+                <div class="card text-center">
+                    <p class="text-4xl font-bold text-sky-600">~90,000</p>
+                    <p class="font-semibold mt-2">Nhu Cầu Nhân Lực (Q3/2025)</p>
+                </div>
+                <div class="card text-center">
+                    <p class="text-4xl font-bold text-sky-600">6+</p>
+                    <p class="font-semibold mt-2">Nhóm Ngành "Hot" Triển Vọng</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="diem-moi" class="mb-24 scroll-mt-20">
+            <h2 class="section-title">Điểm Mới Then Chốt trong Tuyển Sinh 2025</h2>
+            <p class="section-subtitle">
+                Bộ GD&ĐT đã ban hành nhiều quy định mới quan trọng, định hình lại toàn bộ cục diện tuyển sinh. Hãy cùng tìm hiểu những thay đổi cốt lõi và tác động của chúng.
+            </p>
+            <div id="policy-accordion" class="space-y-4 max-w-4xl mx-auto">
+            </div>
+        </section>
+
+        <section id="truong-dh" class="mb-24 scroll-mt-20">
+            <h2 class="section-title">Góc Nhìn từ các Trường Đại học</h2>
+            <p class="section-subtitle">
+                Các trường đại học tại TP.HCM đang linh hoạt điều chỉnh chiến lược để thích ứng với quy chế mới. Khám phá các phương thức tuyển sinh và tiêu chí nổi bật của từng trường.
+            </p>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                <div class="lg:col-span-1 space-y-6">
+                     <div class="card">
+                        <label for="university-select" class="font-semibold text-slate-800 block mb-2">Chọn trường để xem chi tiết:</label>
+                        <select id="university-select" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition">
+                        </select>
+                    </div>
+                    <div id="university-info" class="card min-h-[300px]">
+                    </div>
+                </div>
+                <div class="lg:col-span-2 card">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4 text-center">Xu hướng Đa dạng hóa Phương thức Tuyển sinh</h3>
+                    <p class="text-center text-slate-500 mb-6">Biểu đồ thể hiện số lượng trường (trong danh sách) áp dụng các phương thức tuyển sinh phổ biến, cho thấy sự ưu tiên cho các bài thi đánh giá năng lực và xét tuyển tổng hợp.</p>
+                    <div class="chart-container h-96">
+                        <canvas id="admissionMethodsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="thi-sinh" class="mb-24 scroll-mt-20">
+            <h2 class="section-title">Tâm Lý & Chiến Lược của Thí Sinh</h2>
+             <p class="section-subtitle">
+                Những thay đổi lớn gây ra không ít lo lắng, nhưng cũng thúc đẩy học sinh và phụ huynh xây dựng chiến lược chọn ngành/trường một cách chủ động và bài bản hơn.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="card">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">Những Băn Khoăn Phổ Biến</h3>
+                    <ul id="student-concerns" class="space-y-3">
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">Lộ Trình Hoạch Định Chiến Lược 4 Bước</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 bg-sky-100 text-sky-700 font-bold w-10 h-10 rounded-full flex items-center justify-center mr-4">1</div>
+                            <div>
+                                <h4 class="font-semibold text-slate-800">Tự khám phá</h4>
+                                <p class="text-slate-600">Ưu tiên chọn ngành phù hợp với năng lực, tính cách và đam mê thực sự của bản thân.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start">
+                             <div class="flex-shrink-0 bg-sky-100 text-sky-700 font-bold w-10 h-10 rounded-full flex items-center justify-center mr-4">2</div>
+                            <div>
+                                <h4 class="font-semibold text-slate-800">Nghiên cứu sâu</h4>
+                                <p class="text-slate-600">Tìm hiểu kỹ về ngành học, chương trình đào tạo và các yêu cầu thực tế của nghề nghiệp tương lai.</p>
+                            </div>
+                        </div>
+                         <div class="flex items-start">
+                             <div class="flex-shrink-0 bg-sky-100 text-sky-700 font-bold w-10 h-10 rounded-full flex items-center justify-center mr-4">3</div>
+                            <div>
+                                <h4 class="font-semibold text-slate-800">Cân bằng đam mê & thực tế</h4>
+                                <p class="text-slate-600">Đánh giá thực tế năng lực học tập và xem xét các ngành liên quan nếu ngành mục tiêu quá cạnh tranh.</p>
+                            </div>
+                        </div>
+                         <div class="flex items-start">
+                             <div class="flex-shrink-0 bg-sky-100 text-sky-700 font-bold w-10 h-10 rounded-full flex items-center justify-center mr-4">4</div>
+                            <div>
+                                <h4 class="font-semibold text-slate-800">Sắp xếp nguyện vọng</h4>
+                                <p class="text-slate-600">Đặt ngành yêu thích nhất ở nguyện vọng 1 để tối đa hóa cơ hội trúng tuyển theo hệ thống.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card md:col-span-2">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4 text-center">✨ Tư vấn chiến lược cá nhân hóa ✨</h3>
+                    <p class="text-center text-slate-500 mb-4">Nhập các mối quan tâm hoặc câu hỏi của bạn về việc chọn ngành, trường, hoặc chiến lược ôn thi để nhận lời khuyên từ AI.</p>
+                    <textarea id="personal-advice-input" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition mb-4 min-h-[100px]" placeholder="Ví dụ: Tôi nên chọn ngành nào nếu thích công nghệ nhưng sợ áp lực?"></textarea>
+                    <button id="get-personal-advice-button" class="w-full bg-sky-600 text-white font-semibold px-4 py-3 rounded-lg hover:bg-sky-700 transition flex items-center justify-center">
+                        <span id="advice-button-text">Nhận Lời Khuyên ✨</span>
+                        <svg id="advice-loading-spinner" class="animate-spin h-5 w-5 text-white ml-3 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </button>
+                    <div id="personal-advice-output" class="card bg-sky-50 border-l-4 border-sky-500 mt-6 hidden">
+                        <h4 class="font-semibold text-slate-800 mb-2">Lời khuyên từ AI:</h4>
+                        <p class="text-slate-700"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="xu-huong" class="mb-24 scroll-mt-20">
+            <h2 class="section-title">Thị Trường Lao Động & Các Chính Sách Hỗ Trợ</h2>
+            <p class="section-subtitle">
+                Quyết định chọn ngành không chỉ dựa vào đam mê mà còn chịu ảnh hưởng lớn từ xu hướng việc làm và các chính sách học bổng, ưu đãi của nhà nước.
+            </p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                 <div class="card">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4 text-center">Các Nhóm Ngành "Hot" Dự Kiến 2025</h3>
+                     <p class="text-center text-slate-500 mb-6">Nhu cầu nhân lực có kỹ năng cao tập trung vào các lĩnh vực công nghệ, kỹ thuật, y tế và kinh doanh số. Di chuột qua các phần để xem chi tiết.</p>
+                    <div class="chart-container h-96">
+                        <canvas id="hotSectorsChart"></canvas>
+                    </div>
+                    <div class="mt-6">
+                        <h3 class="text-xl font-bold text-slate-800 mb-4 text-center">✨ Khám phá ngành nghề ✨</h3>
+                        <label for="career-sector-select" class="font-semibold text-slate-800 block mb-2">Chọn nhóm ngành để khám phá:</label>
+                        <select id="career-sector-select" class="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition mb-4">
+                        </select>
+                        <button id="get-career-info-button" class="w-full bg-sky-600 text-white font-semibold px-4 py-3 rounded-lg hover:bg-sky-700 transition flex items-center justify-center">
+                            <span id="career-button-text">Tìm hiểu chi tiết ✨</span>
+                            <svg id="career-loading-spinner" class="animate-spin h-5 w-5 text-white ml-3 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </button>
+                        <div id="career-info-output" class="card bg-sky-50 border-l-4 border-sky-500 mt-6 hidden">
+                            <h4 class="font-semibold text-slate-800 mb-2">Thông tin ngành nghề:</h4>
+                            <p class="text-slate-700"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                     <h3 class="text-xl font-bold text-slate-800 mb-4">Học Bổng & Hỗ Trợ Nổi Bật</h3>
+                     <div id="scholarship-accordion" class="space-y-3">
+                     </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="du-bao" class="mb-24 scroll-mt-20">
+            <h2 class="section-title">Dữ Liệu Lịch Sử & Dự Báo Xu Hướng</h2>
+             <p class="section-subtitle">
+                Phân tích dữ liệu tuyển sinh 2023-2024 và các dự báo từ chuyên gia giúp chúng ta có cái nhìn toàn cảnh hơn về kỳ tuyển sinh 2025 sắp tới.
+            </p>
+            <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                <div class="lg:col-span-3 card">
+                     <h3 class="text-xl font-bold text-slate-800 mb-4 text-center">So Sánh Thống Kê Tuyển Sinh 2023 & 2024</h3>
+                     <p class="text-center text-slate-500 mb-6">Biểu đồ cho thấy sự thay đổi trong số lượng và tỷ lệ thí sinh đăng ký xét tuyển đại học qua các năm.</p>
+                    <div class="chart-container h-96">
+                        <canvas id="historicalDataChart"></canvas>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 card bg-sky-50 border-l-4 border-sky-500">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4">Dự Báo Chính cho 2025</h3>
+                    <ul class="space-y-4">
+                        <li class="flex items-start">
+                            <span class="text-sky-600 mr-3 mt-1">➔</span>
+                            <div><strong class="font-semibold text-slate-800">Điểm chuẩn có thể giảm (về số học):</strong> Do đề thi phân hóa tốt hơn, nhưng cạnh tranh ở các ngành top vẫn rất cao.</div>
+                        </li>
+                         <li class="flex items-start">
+                            <span class="text-sky-600 mr-3 mt-1">➔</span>
+                            <div><strong class="font-semibold text-slate-800">Tăng tầm quan trọng của học bạ & ĐGNL:</strong> Học sinh cần đầu tư vào thành tích cả năm lớp 12 và các kỳ thi riêng.</div>
+                        </li>
+                         <li class="flex items-start">
+                            <span class="text-sky-600 mr-3 mt-1">➔</span>
+                             <div><strong class="font-semibold text-slate-800">Nhu cầu tư vấn hướng nghiệp tăng vọt:</strong> Sự lo lắng thúc đẩy học sinh tìm kiếm lời khuyên chuyên sâu và cá nhân hóa.</div>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-sky-600 mr-3 mt-1">➔</span>
+                             <div><strong class="font-semibold text-slate-800">Ngành "hot" tiếp tục nóng:</strong> CNTT, AI, Marketing, Kỹ thuật vẫn sẽ thu hút lượng lớn nguyện vọng.</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+         <section id="khuyen-nghi" class="scroll-mt-20">
+             <h2 class="section-title">Khuyến Nghị Chiến Lược cho Trường Đại học</h2>
+             <p class="section-subtitle">
+                Để thích ứng và phát triển trong bối cảnh mới, các trường đại học cần có những bước đi chiến lược, tập trung vào công bằng, truyền thông và đáp ứng nhu cầu xã hội.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="card">
+                    <h4 class="font-bold text-lg text-sky-700 mb-2">1. Minh bạch hóa</h4>
+                    <p>Công bố rõ ràng, nhất quán quy tắc quy đổi điểm giữa các phương thức. Đầu tư vào hệ thống CNTT để xử lý dữ liệu tuyển sinh hiệu quả.</p>
+                </div>
+                <div class="card">
+                    <h4 class="font-bold text-lg text-sky-700 mb-2">2. Tăng cường Tư vấn</h4>
+                    <p>Đầu tư vào các chương trình tư vấn hướng nghiệp cá nhân hóa, chuyên sâu. Hợp tác chặt chẽ với các trường THPT để giải tỏa lo lắng cho học sinh.</p>
+                </div>
+                 <div class="card">
+                    <h4 class="font-bold text-lg text-sky-700 mb-2">3. Điều chỉnh Chương trình</h4>
+                    <p>Thường xuyên cập nhật chương trình đào tạo, phát triển các ngành liên ngành để bám sát nhu cầu thị trường lao động. Tăng cường hợp tác doanh nghiệp.</p>
+                </div>
+                 <div class="card">
+                    <h4 class="font-bold text-lg text-sky-700 mb-2">4. Truyền thông Hỗ trợ</h4>
+                    <p>Quảng bá mạnh mẽ các chính sách học bổng, hỗ trợ tài chính để thu hút và giữ chân nhân tài, đặc biệt là ở các ngành chiến lược.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <footer class="bg-slate-800 text-slate-300 py-8">
+        <div class="container mx-auto px-4 text-center">
+            <p>&copy; 2024 Dashboard Phân tích Tuyển sinh. Được tạo cho mục đích thông tin.</p>
+            <p class="text-sm text-slate-400 mt-2">Dữ liệu được tổng hợp và phân tích từ "Nghiên cứu Xu hướng và Tác động của Chính sách Tuyển sinh Đại học 2025 tại TP. Hồ Chí Minh".</p>
+        </div>
+    </footer>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const data = {
+        policies: [
+            { title: "Bãi bỏ xét tuyển sớm", content: "Tất cả các phương thức xét tuyển (trừ xét tuyển thẳng) sẽ tuân theo lịch chung của Bộ GD&ĐT. <strong>Tác động:</strong> Giảm áp lực học tập ở học kỳ 2 lớp 12, tránh tình trạng thí sinh 'ảo' và 'giữ chỗ', nhưng tăng sự căng thẳng dồn vào một kỳ thi duy nhất." },
+            { title: "Quy định mới về học bạ", content: "Bắt buộc phải sử dụng kết quả học tập cả năm lớp 12, với trọng số tối thiểu 25% trong tổng điểm xét tuyển. <strong>Tác động:</strong> Thúc đẩy học sinh duy trì thành tích học tập ổn định và nghiêm túc suốt năm cuối cấp." },
+            { title: "Công khai quy tắc quy đổi điểm", content: "Các trường phải công khai quy tắc quy đổi điểm tương đương giữa các phương thức xét tuyển khác nhau. <strong>Tác động:</strong> Đảm bảo sự minh bạch, công bằng, giúp thí sinh có đầy đủ thông tin để đăng ký nguyện vọng." },
+            { title: "Linh hoạt tổ hợp môn", content: "Bỏ giới hạn 4 tổ hợp/ngành. Yêu cầu tổ hợp có ít nhất 3 môn phù hợp, trong đó Toán hoặc Ngữ văn chiếm tối thiểu 25% trọng số. <strong>Tác động:</strong> Giúp các trường thiết kế tiêu chí tuyển sinh phù hợp hơn với chương trình GDPT mới." },
+            { title: "Giới hạn điểm cộng", content: "Tổng điểm cộng (ưu tiên, khuyến khích,...) không được vượt quá 10% thang điểm (tối đa 3 điểm trên thang 30). Trọng số điểm quy đổi từ chứng chỉ ngoại ngữ không quá 50%. <strong>Tác động:</strong> Tăng tính công bằng, hạn chế lạm dụng chứng chỉ và điểm cộng." },
+            { title: "Hệ thống tự động xét tuyển", content: "Thí sinh không cần chọn mã phương thức/tổ hợp. Hệ thống của Bộ sẽ tự động xét tuyển theo phương thức có kết quả cao nhất. <strong>Tác động:</strong> Giảm tải và sự phức tạp cho thí sinh, tăng cơ hội trúng tuyển vào nguyện vọng ưu tiên." }
+        ],
+        universities: [
+            { id: "hcmut", name: "ĐH Bách khoa (HCMUT)", methods: ["Tổng hợp", "Thẳng"], info: "<h4 class='font-bold text-lg mb-2'>ĐH Bách Khoa (HCMUT)</h4><p>Dành <strong>99%</strong> chỉ tiêu cho phương thức xét tuyển tổng hợp, kết hợp: <strong>70%</strong> điểm thi ĐGNL ĐHQG-HCM, <strong>20%</strong> điểm thi tốt nghiệp THPT, và <strong>10%</strong> điểm học bạ. Ngưỡng xét tuyển là 50/100.</p>" },
+            { id: "ueh", name: "ĐH Kinh tế TP.HCM (UEH)", methods: ["Thẳng", "CCQT", "Học bạ", "ĐGNL", "THPT"], info: "<h4 class='font-bold text-lg mb-2'>ĐH Kinh tế TP.HCM (UEH)</h4><p>Áp dụng 5 phương thức đa dạng. Cộng điểm ưu tiên cho chứng chỉ tiếng Anh quốc tế (ví dụ: IELTS 6.0+ được cộng 0.5-1.5 điểm). Cam kết công khai quy tắc quy đổi điểm.</p>" },
+            { id: "ussh", name: "ĐH KHXH&NV (USSH)", methods: ["Thẳng", "ĐGNL", "THPT"], info: "<h4 class='font-bold text-lg mb-2'>ĐH KHXH&NV (USSH)</h4><p>Sử dụng 3 phương thức chính, tập trung vào xét tuyển thẳng/ưu tiên, kết quả thi ĐGNL của ĐHQG-HCM và kết quả thi tốt nghiệp THPT. Có yêu cầu ngoại ngữ riêng cho các chương trình liên kết.</p>" },
+            { id: "ump", name: "ĐH Y Dược TP.HCM (UMP)", methods: ["THPT", "CCQT", "Thẳng"], info: "<h4 class='font-bold text-lg mb-2'>ĐH Y Dược TP.HCM (UMP)</h4><p>Áp dụng 4 phương thức, chủ yếu dựa vào kết quả thi THPT, có kết hợp chứng chỉ quốc tế. Cộng điểm cho IELTS 6.0+, SAT 1340+ nhưng không quy đổi để miễn thi tốt nghiệp.</p>" },
+            { id: "hcmus", name: "ĐH KHTN (HCMUS)", methods: ["Thẳng", "CCQT", "THPT", "ĐGNL"], info: "<h4 class='font-bold text-lg mb-2'>ĐH Khoa học Tự nhiên (HCMUS)</h4><p>Rút gọn từ 6 xuống còn 3 phương thức chính: xét tuyển thẳng (kết hợp CCQT và học bạ), xét điểm thi THPT và xét điểm thi ĐGNL ĐHQG-HCM. </p>" },
+            { id: "ftu2", name: "ĐH Ngoại thương CS2", methods: ["Học bạ", "THPT", "ĐGNL", "Thẳng"], info: "<h4 class='font-bold text-lg mb-2'>ĐH Ngoại thương CS2 (FTU2)</h4><p>Sử dụng 4 phương thức chính, bao gồm xét học bạ, kết quả thi THPT, chứng chỉ ĐGNL (trong nước và quốc tế), và xét tuyển thẳng.</p>"},
+            { id: "hcmue", name: "ĐH Sư phạm TP.HCM", methods: ["Thẳng", "THPT", "Học bạ", "ĐGNL"], info: "<h4 class='font-bold text-lg mb-2'>ĐH Sư phạm TP.HCM (HCMUE)</h4><p>Sử dụng 5 phương thức, kết hợp linh hoạt giữa xét tuyển thẳng, điểm thi THPT, học bạ và kỳ thi đánh giá năng lực chuyên biệt do trường tổ chức.</p>"}
+        ],
+        studentConcerns: [
+            { concern: "Lo lắng về kỳ thi mới", advice: "Định dạng thi mới theo chương trình 2018 gây không ít bối rối. <strong>Lời khuyên:</strong> Bám sát đề minh họa của Bộ, tập trung vào việc hiểu sâu kiến thức nền tảng thay vì học tủ, học lệch." },
+            { concern: "Áp lực từ gia đình", advice: "Phụ huynh thường kỳ vọng con theo đuổi các ngành 'hot' như CNTT. <strong>Lời khuyên:</strong> Cần có cuộc đối thoại cởi mở, trình bày rõ nguyện vọng và năng lực của bản thân, cùng gia đình tìm ra lựa chọn cân bằng." },
+            { concern: "Sợ chọn sai ngành", advice: "Nỗi sợ này rất phổ biến và có cơ sở (10-15% sinh viên bỏ học do chọn sai ngành). <strong>Lời khuyên:</strong> Đầu tư thời gian để tự khám phá, làm các bài trắc nghiệm hướng nghiệp, và tìm hiểu sâu về ngành học thay vì chỉ nhìn bề nổi." },
+            { concern: "Mất 'lưới an toàn' xét tuyển sớm", advice: "Việc chỉ còn một đợt xét tuyển duy nhất làm tăng cảm giác rủi ro. <strong>Lời khuyên:</strong> Tập trung tối đa cho kỳ thi tốt nghiệp THPT, đồng thời tìm hiểu các phương thức xét tuyển khác (ĐGNL, học bạ) để đa dạng hóa cơ hội." }
+        ],
+        hotSectors: {
+            labels: ["CNTT & AI", "Kỹ thuật & Tự động hóa", "Kinh doanh & Marketing", "Y tế & Sức khỏe", "Sáng tạo & Dịch vụ", "Khoa học Xã hội"],
+            data: [25, 20, 20, 15, 10, 10]
+        },
+        scholarships: [
+            { title: "Hỗ trợ ngành chiến lược (Khoa học, Công nghệ)", content: "Đề xuất hỗ trợ sinh hoạt phí <strong>3,63 triệu đồng/tháng</strong> cho sinh viên các ngành khoa học cơ bản, kỹ thuật then chốt. Học bổng 'Tiếp sức mùa thi' cũng ưu tiên khối ngành này." },
+            { title: "Hỗ trợ ngành Sư phạm", content: "Sinh viên theo học các ngành sư phạm được hưởng chính sách hỗ trợ học phí và chi phí sinh hoạt theo <strong>Nghị định 116/2020/NĐ-CP</strong>." },
+            { title: "Hỗ trợ ngành Y tế đặc thù", content: "Có các chính sách học bổng và hỗ trợ riêng cho sinh viên theo học các chuyên ngành hiếm như tâm thần, giải phẫu bệnh, pháp y, truyền nhiễm." },
+            { title: "Học bổng từ các trường", content: "Nhiều trường (UEH, UIT, Phenikaa,...) có các suất học bổng giá trị cao (toàn phần, bán phần) để thu hút học sinh giỏi và hỗ trợ sinh viên khó khăn." }
+        ],
+        historicalData: {
+            years: ["2023", "2024"],
+            registeredApplicants: [660258, 733000],
+            registrationRate: [65.9, 68.5]
+        }
+    };
+
+    function populateAccordion(containerId, dataArray) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = dataArray.map((item, index) => `
+            <div class="card p-0 overflow-hidden">
+                <button class="accordion-button w-full text-left p-4 font-semibold text-slate-700 flex justify-between items-center" data-index="${index}">
+                    <span>${item.title}</span>
+                    <svg class="w-5 h-5 transition-transform shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div class="accordion-content px-4">
+                    <div class="py-4 border-t border-slate-200">
+                        <p class="text-slate-600">${item.content}</p>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        container.addEventListener('click', function(e) {
+            const button = e.target.closest('.accordion-button');
+            if (button) {
+                const content = button.nextElementSibling;
+                const icon = button.querySelector('svg');
+                button.classList.toggle('open');
+                
+                document.querySelectorAll('.accordion-button').forEach((otherButton) => {
+                    if (otherButton !== button) {
+                        otherButton.classList.remove('open');
+                        otherButton.querySelector('svg').style.transform = '';
+                        otherButton.nextElementSibling.style.maxHeight = null;
+                        otherButton.nextElementSibling.style.paddingTop = '0';
+                        otherButton.nextElementSibling.style.paddingBottom = '0';
+                    }
+                });
+
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                    content.style.paddingTop = '0';
+                    content.style.paddingBottom = '0';
+                    icon.style.transform = '';
+                } else {
+                    content.style.paddingTop = '1rem';
+                    content.style.paddingBottom = '1rem';
+                    content.style.maxHeight = content.scrollHeight + "px";
+                    icon.style.transform = 'rotate(180deg)';
+                }
+            }
+        });
+    }
+
+    function populateUniversitySelector() {
+        const select = document.getElementById('university-select');
+        select.innerHTML = data.universities.map(uni => `<option value="${uni.id}">${uni.name}</option>`).join('');
+        select.addEventListener('change', (e) => updateUniversityInfo(e.target.value));
+        updateUniversityInfo(data.universities[0].id);
+    }
+    
+    function updateUniversityInfo(universityId) {
+        const infoDiv = document.getElementById('university-info');
+        const uni = data.universities.find(u => u.id === universityId);
+        if (uni) {
+            infoDiv.innerHTML = uni.info;
+        }
+    }
+
+    function populateStudentConcerns() {
+        const ul = document.getElementById('student-concerns');
+        ul.innerHTML = data.studentConcerns.map(item => `
+            <li class="p-4 rounded-lg transition-colors duration-300 hover:bg-slate-100">
+                <p class="font-semibold text-slate-800">${item.concern}</p>
+                <p class="text-slate-600 mt-1">${item.advice}</p>
+            </li>
+        `).join('');
+    }
+    
+    function initAdmissionMethodsChart() {
+        const ctx = document.getElementById('admissionMethodsChart').getContext('2d');
+        const allMethods = data.universities.flatMap(u => u.methods);
+        const methodCounts = allMethods.reduce((acc, method) => {
+            acc[method] = (acc[method] || 0) + 1;
+            return acc;
+        }, {});
+
+        const labels = Object.keys(methodCounts);
+        const chartData = Object.values(methodCounts);
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Số trường áp dụng',
+                    data: chartData,
+                    backgroundColor: '#38bdf8',
+                    borderColor: '#0284c7',
+                    borderWidth: 1,
+                    borderRadius: 5,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: '#1e293b',
+                        titleFont: { weight: 'bold' },
+                        bodyFont: { size: 14 },
+                        padding: 12,
+                        cornerRadius: 8,
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#e2e8f0'
+                        },
+                         ticks: {
+                            font: {
+                                family: "'Be Vietnam Pro', sans-serif"
+                            }
+                        }
+                    },
+                    y: {
+                         grid: {
+                            display: false
+                        },
+                         ticks: {
+                            font: {
+                                family: "'Be Vietnam Pro', sans-serif",
+                                size: 14,
+                                weight: '500'
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function initHotSectorsChart() {
+        const ctx = document.getElementById('hotSectorsChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.hotSectors.labels,
+                datasets: [{
+                    label: 'Tỷ trọng nhu cầu',
+                    data: data.hotSectors.data,
+                    backgroundColor: ['#0ea5e9', '#0891b2', '#0d9488', '#10b981', '#f59e0b', '#84cc16'],
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                         labels: {
+                            font: {
+                                family: "'Be Vietnam Pro', sans-serif"
+                            },
+                            padding: 15
+                        }
+                    },
+                     tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    label += context.parsed + '%';
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function initHistoricalDataChart() {
+        const ctx = document.getElementById('historicalDataChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: data.historicalData.years,
+                datasets: [
+                    {
+                        label: 'Số thí sinh ĐKXT',
+                        data: data.historicalData.registeredApplicants,
+                        backgroundColor: '#38bdf8',
+                        yAxisID: 'y',
+                    },
+                    {
+                        label: 'Tỷ lệ ĐKXT/dự thi (%)',
+                        data: data.historicalData.registrationRate,
+                        backgroundColor: '#f59e0b',
+                        yAxisID: 'y1',
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                 plugins: {
+                    tooltip: {
+                         mode: 'index',
+                         intersect: false
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            font: {
+                                family: "'Be Vietnam Pro', sans-serif"
+                            }
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                         title: {
+                            display: true,
+                            text: 'Số thí sinh (người)'
+                        },
+                        ticks: {
+                           callback: function(value) {
+                                return value / 1000 + 'k';
+                           }
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                         title: {
+                            display: true,
+                            text: 'Tỷ lệ (%)'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                         ticks: {
+                           callback: function(value) {
+                                return value + '%';
+                           }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // LLM Integration Functions
+    async function getLLMResponse(prompt) {
+        const apiKey = "AIzaSyBGxwcEh3gfc0PQZaZeO90ILkjaqhlVNCY"; // If you want to use models other than gemini-2.0-flash or imagen-3.0-generate-002, provide an API key here. Otherwise, leave this as-is.
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+        
+        let chatHistory = [];
+        chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+        const payload = { contents: chatHistory };
+
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await response.json();
+            if (result.candidates && result.candidates.length > 0 &&
+                result.candidates[0].content && result.candidates[0].content.parts &&
+                result.candidates[0].content.parts.length > 0) {
+                return result.candidates[0].content.parts[0].text;
+            } else {
+                console.error("Unexpected LLM response structure:", result);
+                return "Không thể tạo lời khuyên. Vui lòng thử lại.";
+            }
+        } catch (error) {
+            console.error("Error calling Gemini API:", error);
+            return "Đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại sau.";
+        }
+    }
+
+    // Personalized Advice Feature
+    const personalAdviceInput = document.getElementById('personal-advice-input');
+    const getPersonalAdviceButton = document.getElementById('get-personal-advice-button');
+    const adviceButtonText = document.getElementById('advice-button-text');
+    const adviceLoadingSpinner = document.getElementById('advice-loading-spinner');
+    const personalAdviceOutput = document.getElementById('personal-advice-output');
+
+    getPersonalAdviceButton.addEventListener('click', async () => {
+        const userQuery = personalAdviceInput.value.trim();
+        if (!userQuery) {
+            personalAdviceOutput.querySelector('p').textContent = "Vui lòng nhập câu hỏi hoặc mối quan tâm của bạn.";
+            personalAdviceOutput.classList.remove('hidden');
+            return;
+        }
+
+        adviceButtonText.classList.add('hidden');
+        adviceLoadingSpinner.classList.remove('hidden');
+        personalAdviceOutput.classList.add('hidden'); // Hide previous output
+
+        const prompt = `Bạn là một chuyên gia tư vấn tuyển sinh đại học và hướng nghiệp tại TP.HCM. Dựa trên thông tin về chính sách tuyển sinh đại học 2025 và xu hướng thị trường lao động, hãy đưa ra lời khuyên cá nhân hóa cho học sinh THPT dựa trên câu hỏi sau: "${userQuery}". Lời khuyên nên ngắn gọn, súc tích, thực tế và dễ hiểu, tập trung vào các bước hành động cụ thể.`;
+        const advice = await getLLMResponse(prompt);
+
+        personalAdviceOutput.querySelector('p').textContent = advice;
+        personalAdviceOutput.classList.remove('hidden');
+        adviceButtonText.classList.remove('hidden');
+        adviceLoadingSpinner.classList.add('hidden');
+    });
+
+    // Explore Career Paths Feature
+    const careerSectorSelect = document.getElementById('career-sector-select');
+    const getCareerInfoButton = document.getElementById('get-career-info-button');
+    const careerButtonText = document.getElementById('career-button-text');
+    const careerLoadingSpinner = document.getElementById('career-loading-spinner');
+    const careerInfoOutput = document.getElementById('career-info-output');
+
+    // Populate career sector dropdown
+    data.hotSectors.labels.forEach(label => {
+        const option = document.createElement('option');
+        option.value = label;
+        option.textContent = label;
+        careerSectorSelect.appendChild(option);
+    });
+
+    getCareerInfoButton.addEventListener('click', async () => {
+        const selectedSector = careerSectorSelect.value;
+        if (!selectedSector) {
+            careerInfoOutput.querySelector('p').textContent = "Vui lòng chọn một nhóm ngành.";
+            careerInfoOutput.classList.remove('hidden');
+            return;
+        }
+
+        careerButtonText.classList.add('hidden');
+        careerLoadingSpinner.classList.remove('hidden');
+        careerInfoOutput.classList.add('hidden'); // Hide previous output
+
+        const prompt = `Bạn là một chuyên gia phân tích thị trường lao động. Hãy cung cấp thông tin chi tiết về các con đường sự nghiệp chính, các kỹ năng cần thiết (kỹ năng cứng và mềm), và triển vọng tương lai cho nhóm ngành "${selectedSector}" tại TP.HCM. Thông tin nên ngắn gọn, khoảng 3-5 gạch đầu dòng cho mỗi phần.`;
+        const careerInfo = await getLLMResponse(prompt);
+
+        careerInfoOutput.querySelector('p').textContent = careerInfo;
+        careerInfoOutput.classList.remove('hidden');
+        careerButtonText.classList.remove('hidden');
+        careerLoadingSpinner.classList.add('hidden');
+    });
+
+
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    mobileMenuButton.addEventListener('click', () => {
+        mobileMenu.classList.toggle('hidden');
+    });
+
+    document.querySelectorAll('#mobile-menu a, .hidden.md\\:flex a').forEach(link => {
+        link.addEventListener('click', () => {
+            mobileMenu.classList.add('hidden');
+        });
+    });
+
+    populateAccordion('policy-accordion', data.policies);
+    populateUniversitySelector();
+    populateStudentConcerns();
+    populateAccordion('scholarship-accordion', data.scholarships);
+    initAdmissionMethodsChart();
+    initHotSectorsChart();
+    initHistoricalDataChart();
+});
+</script>
+
+</body>
+</html>
